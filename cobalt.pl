@@ -12,10 +12,11 @@ $mode = 0; #enemy retaliation
 #            0    1     2   3   4   5   6   7   8   9  10  11  12  13  14    15    16
 #          hp-   hp+   mp- mp+ ap- ap+ at  df  ac  ev  at  df  ac  ev  sp    name regen
 @player = (1000, 1000, 40, 50, 20, 25, 50, 50, 70, 10, 50, 50, 90, 10, 20, "Thomas", 0);
-$lines = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+$money = 200;
+$lines = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"; #how else do you clear the screen?
 $itpot = 100; $ithpt = 200; $itgr1 = 200; $itgr2 = 20; $itabi = 10; $itmag = 15; #item values
-@inven = (4, 3, 3, 2, 2);                                    #sample inventory
-print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com\nVersion 1.1.1\n\nPress Enter...\n";
+@inven = (4, 3, 3, 2, 2); #inventory
+print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com\nVersion 1.2.2\n\nPress Enter...\n";
 <STDIN>;
 }
 
@@ -24,6 +25,7 @@ sub map_move {
   @enemy = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Nobody", 0);
   print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
   print "$player[15] HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
+  print "Funds: $money\n";
   print "--Location--\n";
   print "X:$x Y:$y M: $m\n";
   print "--Choices---\n";
@@ -58,6 +60,7 @@ user_quit();
 sub check_local {
   if ($x == 4 and $y == 2) {
    print "You are at the town..."; <STDIN>;
+   shop();
   } elsif ($x == 0 and $y == 0) {
    print "You are at your house and you rest..."; <STDIN>;
    $player[0] += 200; $player[2] += 2; $player[4] += 1; hpcheck();
@@ -92,7 +95,12 @@ $enemy[13] = (int rand(10) + 5);
 $enemy[14] = (int rand(4) + 18);
 @names = ("Jekeyl", "FeiSar", "Zidaxe", "Goteki", "Icarus"); #sample names
 $enemy[15] = @names[ rand @names ];                          #name grabber
-combat();
+$endbattle = 0;
+if (combat() != 29) {
+my($spoils) = mrand(100,200);
+print "You win $spoils cash...\n"; <STDIN>;
+$money += $spoils;
+ }
 }
 
 sub combat {
@@ -113,7 +121,7 @@ if ($choice == 1) {       #fight
    magic();
 } elsif ($choice == 5) {  #Run
    $odds = ( $player[14] * 50 * rand ) - ( $enemy[14] * 100 * rand ); #this needs to be fixed...
-   if ($odds > 0) {print "You run away safely...\n"; <STDIN>; $endbattle = 1;}
+   if ($odds > 0) {print "You run away safely...\n"; <STDIN>; $endbattle = 1; return(29);}
    else {
     print "\aYou don't run away...\n"; <STDIN>;
     enemai();
@@ -122,34 +130,16 @@ if ($choice == 1) {       #fight
    charge();
 } elsif ($choice == 7) {  #View self stats
    view_self_stats();
+} elsif ($choice == 96) {  #debug
+   debug4();
 } elsif ($choice == 97) {  #Debug
-   print "DEBUG: display variables\n";
-   print "Player stats: @player[0 .. 16]\n";
-   print "Enemy stats : @enemy[0 .. 15]\n";
-   print "Variable Scopes: a: $a b: $b c: $c asdf: $asdf damage: $damage regen: $regen orig: $orig type: $type cheat: $cheat\n";
-   print "Potions   ($inven[0])$itpot\nHiPotions ($inven[1])$ithpt\nGrenades  ($inven[2])$itgr1 $itgr2\nAbility   ($inven[3])$itabi\nMagic     ($inven[4])$itmag\n";
-   print "press enter..."; <STDIN>;
-   $cheat = 1;
+   debug1();
 } elsif ($choice == 98) {  #Debug
-   print "DEBUG: increase all enemy min/max points\n"; <STDIN>;
-   $enemy[1] += 200;
-   $enemy[0] = $enemy[1];
-   $enemy[3] += 30;
-   $enemy[2] = $enemy[3];
-   $enemy[5] += 15;
-   $enemy[4] = $enemy[5];
-   $cheat = 1;
+   debug2();
 } elsif ($choice == 99) {  #Debug
-   print "DEBUG: increase all self min/max points\n"; <STDIN>;
-   $player[1] += 200;
-   $player[0] = $player[1];
-   $player[3] += 30;
-   $player[2] = $player[3];
-   $player[5] += 15;
-   $player[4] = $player[5];
-   $cheat = 1;
+   debug3();
 }
-if ($player[0] <= 0 or $enemy[0] <= 0) { }
+if ($player[0] <= 0 or $enemy[0] <= 0) { finish(); }
 }
 }
 
@@ -370,7 +360,7 @@ sub item {
 }
 
 sub ability {
-    print "$lines \b---CHOOSE---($player[4]/$player[5]ap)\n1) Super Punch  (4ap)\n2) Upper Cut    (5ap)\n3) +10% Attack (16ap)\n4) +10% Defense(16ap)\n5) +10% Speed  (16ap)\n6) Restore HP  (10ap)\n7) Scan Enemy   (2ap)\n8) Regen ($player[16])   (20ap)\n9) Back\n";
+    print "$lines \b---CHOOSE---($player[4]/$player[5]ap)\n1) Super Punch  (4ap)\n2) Upper Cut    (5ap)\n3) +10% Attack ($player[5] \bap)\n4) +10% Defense($player[5] \bap)\n5) +10% Speed  ($player[5] \bap)\n6) Restore HP  (10ap)\n7) Scan Enemy   (2ap)\n8) Regen ($player[16])   (20ap)\n9) Back\n";
     $choice = <STDIN>; $choice += "\b";
    if ($choice == 1 && $player[4] >= 4) {
         $damage = dam_mod(100,8);
@@ -384,23 +374,23 @@ sub ability {
        $enemy[0] -= $damage;
        $player[4] -= 5;
        enemai();
-   } elsif ($choice == 3 && $player[4] >= 16) {
+   } elsif ($choice == 3 && $player[4] >= $player[5]) {
        print "Your attack has been increased...\n"; <STDIN>;
        $player[6] *= 1.1;
        $player[6] = int $player[6];
-       $player[4] -= 16;
+       $player[4] -= $player[5];
        enemai();
-   } elsif ($choice == 4 && $player[4] >= 16) {
+   } elsif ($choice == 4 && $player[4] >= $player[5]) {
        print "Your defense has been increased...\n"; <STDIN>;
        $player[7] *= 1.1;
        $player[7] = int $player[7];
-       $player[4] -= 16;
+       $player[4] -= $player[5];
        enemai();
-   } elsif ($choice == 5 && $player[4] >= 16) {
+   } elsif ($choice == 5 && $player[4] >= $player[5]) {
        print "Your speed has been increased...\n"; <STDIN>;
        $player[14] *= 1.1;
        $player[14] = int $player[14];
-       $player[4] -= 16;
+       $player[4] -= $player[5];
        enemai();
    } elsif ($choice == 6 && $player[4] >= 10) {
        print "Your HP has been restored...\n"; <STDIN>;
@@ -488,6 +478,132 @@ sub view_self_stats {
    print "ATT DEF ACC EVA SPD| ATT DEF ACC EVA\n";
    print "$player[6]  $player[7]  $player[8]  $player[9]  $player[14] | $player[10]  $player[11]  $player[12]  $player[13]\n";
    print "\nPress Enter...\n"; <STDIN>;
+}
+
+sub shop {
+   print "$lines";
+   print "Welcome to the shop\nYou have $money cash.\n";
+   print "---BUY------#--cc---SELL---\n";
+   print "1) Potion  ($inven[0])(10c) (06) (5c)\n2) HiPotion($inven[1])(30c) (07) (15c)\n3) Grenade ($inven[2])(75c) (08) (40c)\n4) Magic   ($inven[3])(50c) (09) (25c)\n5) Agility ($inven[4])(50c) (10) (25c)\n99) Leave\n";
+   $choice = <STDIN>;
+   if ($choice == 1 and $money >= 10) {
+   $inven[0] += 1;
+   $money -= 10;
+   print "You now have $inven[0] Potions...\n"; <STDIN>;
+   } elsif ($choice == 2 and $money >= 30) {
+   $inven[1] += 1;
+   $money -= 30;
+   print "You now have $inven[1] HiPotions...\n"; <STDIN>;
+   } elsif ($choice == 3 and $money >= 75) {
+   $inven[2] += 1;
+   $money -= 75;
+   print "You now have $inven[2] Grenades...\n"; <STDIN>;
+   } elsif ($choice == 4 and $money >= 50) {
+   $inven[3] += 1;
+   $money -= 50;
+   print "You now have $inven[3] Magics...\n"; <STDIN>;
+   } elsif ($choice == 5 and $money >= 50) {
+   $inven[4] += 1;
+   $money -= 50;
+   print "You now have $inven[4] Abilities...\n"; <STDIN>;
+   } elsif ($choice == 6 and $inven[0] >= 1) {
+   $inven[0] -= 1;
+   $money += 5;
+   print "You now have $inven[0] Potions...\n"; <STDIN>;
+   } elsif ($choice == 7 and $inven[1] >= 1) {
+   $inven[1] -= 1;
+   $money += 15;
+   print "You now have $inven[1] HiPotions...\n"; <STDIN>;
+   } elsif ($choice == 8 and $inven[2] >= 1) {
+   $inven[2] -= 1;
+   $money += 40;
+   print "You now have $inven[2] Grenades...\n"; <STDIN>;
+   } elsif ($choice == 9 and $inven[3] >= 1) {
+   $inven[3] -= 1;
+   $money += 50;
+   print "You now have $inven[3] Magics...\n"; <STDIN>;
+   } elsif ($choice == 10 and $inven[4] >= 1) {
+   $inven[4] -= 1;
+   $money += 50;
+   print "You now have $inven[4] Abilities...\n"; <STDIN>;
+   }
+}
+
+sub mrand { #min, max
+  my($min) = $_[0];
+  my($max) = $_[1];
+  my($val) = int rand(($max - $min) + 1) + $min;
+  return($val);
+}
+
+sub debug1 {
+   print "DEBUG: display variables\n";
+   print "Player stats: @player[0 .. 16]\n";
+   print "Enemy stats : @enemy[0 .. 15]\n";
+   print "Variable Scopes: a: $a b: $b c: $c asdf: $asdf damage: $damage regen: $regen orig: $orig type: $type cheat: $cheat\n";
+   print "Potions   ($inven[0])$itpot\nHiPotions ($inven[1])$ithpt\nGrenades  ($inven[2])$itgr1 $itgr2\nAbility   ($inven[3])$itabi\nMagic     ($inven[4])$itmag\n";
+   print "press enter..."; <STDIN>;
+   $cheat = 1;
+}
+
+sub debug2 {
+   print "DEBUG: increase all enemy min/max points...\n"; <STDIN>;
+   $enemy[1] += 200;
+   $enemy[0] = $enemy[1];
+   $enemy[3] += 30;
+   $enemy[2] = $enemy[3];
+   $enemy[5] += 15;
+   $enemy[4] = $enemy[5];
+   $cheat = 1;
+}
+
+sub debug3 {
+   print "DEBUG: increase all self min/max points...\n"; <STDIN>;
+   $player[1] += 200;
+   $player[0] = $player[1];
+   $player[3] += 30;
+   $player[2] = $player[3];
+   $player[5] += 15;
+   $player[4] = $player[5];
+   $cheat = 1;
+}
+#            0    1     2   3   4   5   6   7   8   9  10  11  12  13  14    15    16
+#          hp-   hp+   mp- mp+ ap- ap+ at  df  ac  ev  at  df  ac  ev  sp    name regen
+
+sub debug4 {
+   print "DEBUG: manually modify variables...\n"; <STDIN>;
+   print "\nplayer[0]hpa:"; $player[0] = <STDIN>;
+   print "\nplayer[1]hpb:"; $player[1] = <STDIN>;
+   print "\nplayer[2]mpa:"; $player[2] = <STDIN>;
+   print "\nplayer[3]mpb:"; $player[3] = <STDIN>;
+   print "\nplayer[4]apa:"; $player[4] = <STDIN>;
+   print "\nplayer[5]apb:"; $player[5] = <STDIN>;
+   print "\nplayer[6]pat:"; $player[6] = <STDIN>;
+   print "\nplayer[7]pde:"; $player[7] = <STDIN>;
+   print "\nplayer[8]pac:"; $player[8] = <STDIN>;
+   print "\nplayer[9]pev:"; $player[9] = <STDIN>;
+   print "\nplayer[10]mat:"; $player[10] = <STDIN>;
+   print "\nplayer[11]mde:"; $player[11] = <STDIN>;
+   print "\nplayer[12]mac:"; $player[12] = <STDIN>;
+   print "\nplayer[13]mev:"; $player[13] = <STDIN>;
+   print "\nplayer[14]spd:"; $player[14] = <STDIN>;
+   print "\nplayer[15]nam:"; $player[15] = <STDIN>;
+   print "\nplayer[16]rgn:"; $player[16] = <STDIN>;
+   print "\nX:"; $x = <STDIN>;
+   print "\nY:"; $y = <STDIN>;
+   print "\nM:"; $m = <STDIN>;
+   print "\nMoney:"; $money = <STDIN>;
+   print "\nitpot:"; $itpot = <STDIN>;
+   print "\nithpt:"; $ithpt = <STDIN>;
+   print "\nitgr1:"; $itgr1 = <STDIN>;
+   print "\nitgr2:"; $itgr2 = <STDIN>;
+   print "\nitabi:"; $itabi = <STDIN>;
+   print "\nitmag:"; $itmag = <STDIN>;
+   print "\ninven[0]:"; $inven[0] = <STDIN>;
+   print "\ninven[1]:"; $inven[1] = <STDIN>;
+   print "\ninven[2]:"; $inven[2] = <STDIN>;
+   print "\ninven[3]:"; $inven[3] = <STDIN>;
+   print "\ninven[4]:"; $inven[4] = <STDIN>;
 }
 
 #released under the GPL by nucleocide.net
