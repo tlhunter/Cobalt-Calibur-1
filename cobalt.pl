@@ -8,38 +8,43 @@ $x = 0; #horizontal
 $y = 0; #vertical
 $m = 0; #spaces moved
 $play = 1; #continue playing
+$mode = 0; #enemy retaliation
 #            0    1     2   3   4   5   6   7   8   9  10  11  12  13  14    15    16
 #          hp-   hp+   mp- mp+ ap- ap+ at  df  ac  ev  at  df  ac  ev  sp    name regen
 @player = (1000, 1000, 40, 50, 20, 25, 50, 50, 70, 10, 50, 50, 90, 10, 20, "Thomas", 0);
 $lines = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
 $itpot = 100; $ithpt = 200; $itgr1 = 200; $itgr2 = 20; $itabi = 10; $itmag = 15; #item values
 @inven = (4, 3, 3, 2, 2);                                    #sample inventory
-print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com\nVersion 1.0.0\n\nPress Enter...\n";
+print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com\nVersion 1.1.1\n\nPress Enter...\n";
 <STDIN>;
 }
 
 sub map_move {
  while ($play == 1) {
+  @enemy = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Nobody", 0);
   print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
   print "$player[15] HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
   print "--Location--\n";
   print "X:$x Y:$y M: $m\n";
   print "--Choices---\n";
-  print "01) - 09 Move\n";
-  print "10) exit\n"; #items, magic, and abilities
-  print "DIR:";
-  $dir = <STDIN>;
-  if    ($dir == 1 and $y > -10 and $x > -10) { $y -= 1; $x -= 1; }
-  elsif ($dir == 0) { }
-  elsif ($dir == 2 and $y > -10) { $y -= 1; }
-  elsif ($dir == 3 and $y > -10 and $x < 10) { $y -= 1; $x += 1; }
-  elsif ($dir == 4 and $x > -10) { $x -= 1; }
-  elsif ($dir == 5) { }
-  elsif ($dir == 6 and $x < 10) { $x += 1; }
-  elsif ($dir == 7 and $x > -10 and $y < 10 ) { $x -= 1; $y += 1; }
-  elsif ($dir == 8 and $y < 10 ) { $y += 1; }
-  elsif ($dir == 9 and $x < 10 and  $y < 10 ) { $x += 1; $y += 1; }
-  elsif ($dir == 10) { user_quit(); $play = 0; }
+  print "01) - 09 Move\n10) Item\n11) Ability\n12) Magic\n13) View Stats\n14) Exit Game\n";
+  print "?:";
+  $choice = <STDIN>;
+  if    ($choice == 1 and $y > -10 and $x > -10) { $y -= 1; $x -= 1; }
+  elsif ($choice == 0) { }
+  elsif ($choice == 2 and $y > -10) { $y -= 1; }
+  elsif ($choice == 3 and $y > -10 and $x < 10) { $y -= 1; $x += 1; }
+  elsif ($choice == 4 and $x > -10) { $x -= 1; }
+  elsif ($choice == 5) { }
+  elsif ($choice == 6 and $x < 10) { $x += 1; }
+  elsif ($choice == 7 and $x > -10 and $y < 10 ) { $x -= 1; $y += 1; }
+  elsif ($choice == 8 and $y < 10 ) { $y += 1; }
+  elsif ($choice == 9 and $x < 10 and  $y < 10 ) { $x += 1; $y += 1; }
+  elsif ($choice == 10) { $mode = 1; item(); $mode = 0; }
+  elsif ($choice == 11) { $mode = 1; ability(); $mode = 0; }
+  elsif ($choice == 12) { $mode = 1; magic(); $mode = 0; }
+  elsif ($choice == 13) { $mode = 1; view_self_stats(); $mode = 0; }
+  elsif ($choice == 14) { $mode = 1; user_quit(); $play = 0; }
   else { }
   $m++;
   regen();
@@ -55,13 +60,13 @@ sub check_local {
    print "You are at the town..."; <STDIN>;
   } elsif ($x == 0 and $y == 0) {
    print "You are at your house and you rest..."; <STDIN>;
-   $player[0] = $player[1]; $player[2] = $player[3]; $player[4] = $player[5];
+   $player[0] += 200; $player[2] += 2; $player[4] += 1; hpcheck();
   } elsif ($x == -2 and $y == 3) {
    print "You are at the temple..."; <STDIN>;
   } elsif ($x == -10 or $x == 10 or $y == -10 or $y == 10) {
    print "You are drowning in the water..."; <STDIN>;
    $player[0] -= dam_mod(100,10);
-   if (! chk_pl_dth()) { print "$lines \bYou drowned.\n"; exit; }
+   if (! chk_pl_dth()) { print "$lines \bYou drown.\n"; exit; }
   }
 }
 
@@ -96,130 +101,16 @@ hpcheck();
 print "$lines";
 print "$player[15] HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
 print "$enemy[15] HP: $enemy[0]\n";
-print "---CHOOSE---\n1) Attack\n2) Item\n3) Ability\n4) Magic\n5) Run\n6) Charge\n7) View Stats\n9) Exit\n";
+print "---CHOOSE---\n1) Attack\n2) Item\n3) Ability\n4) Magic\n5) Run\n6) Charge\n7) View Stats\n";
 $choice = <STDIN>; $choice += "\b";
 if ($choice == 1) {       #fight
-   if ($player[14] >= $enemy[14]) { platk(); enemai(); }    #player faster
-   elsif ($player[14] <= $enemy[14]) { enemai(); platk(); } #enemy faster
+   fight();
 } elsif ($choice == 2) {  #Item
-   $asdf = 0; #this variable is used to make sure that the enemy attacks only if an item is used
-   print "$lines";
-   print "HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
-   print "Use an Item:\n";
-   print "1) Potions   ($inven[0])\n";
-   print "2) HiPotions ($inven[1])\n";
-   print "3) Grenades  ($inven[2])\n";
-   print "4) Ability   ($inven[3])\n";
-   print "5) Magic     ($inven[4])\n";
-   print "9) Quit\n";
-   $choice = <STDIN>; $choice += "\b"; $choice = int $choice; #get user choice, chop off \n
-   if ($choice == 9) {$asdf = 1;}
-   $choice -= 1;                       #array starts with 0
-
-   if ($inven[$choice] >= 1) {
-      $inven[$choice] -= 1;
-      useitem($choice);
-      hpcheck();
-   } else {
-      if ($asdf == 0) { print "Not enough of those items...\n"; <STDIN>; }
-      $asdf = 1;
-   }
-   if ($asdf == 0){ enemai(); }
+   item();
 } elsif ($choice == 3) {  #Ability
-    print "$lines \b---CHOOSE---($player[4]/$player[5]ap)\n1) Super Punch  (4ap)\n2) Upper Cut    (5ap)\n3) +10% Attack (16ap)\n4) +10% Defense(16ap)\n5) +10% Speed  (16ap)\n6) Restore HP  (10ap)\n7) Scan Enemy   (2ap)\n8) Regen ($player[16])   (20ap)\n9) Back\n";
-    $choice = <STDIN>; $choice += "\b";
-   if ($choice == 1 && $player[4] >= 4) {
-        $damage = dam_mod(100,8);
-        print "Super Punch does $damage damage to $enemy[15]...\n"; <STDIN>;
-        $enemy[0] -= $damage;
-        $player[4] -= 4;
-        enemai();
-   } elsif ($choice == 2 && $player[4] >= 5) {
-       $damage = dam_mod(120,10);
-       print "Upper Cut does $damage damage to $enemy[15]...\n"; <STDIN>;
-       $enemy[0] -= $damage;
-       $player[4] -= 5;
-       enemai();
-   } elsif ($choice == 3 && $player[4] >= 16) {
-       print "Your attack has been increased...\n"; <STDIN>;
-       $player[6] *= 1.1;
-       $player[6] = int $player[6];
-       $player[4] -= 16;
-       enemai();
-   } elsif ($choice == 4 && $player[4] >= 16) {
-       print "Your defense has been increased...\n"; <STDIN>;
-       $player[7] *= 1.1;
-       $player[7] = int $player[7];
-       $player[4] -= 16;
-       enemai();
-   } elsif ($choice == 5 && $player[4] >= 16) {
-       print "Your speed has been increased...\n"; <STDIN>;
-       $player[14] *= 1.1;
-       $player[14] = int $player[14];
-       $player[4] -= 16;
-       enemai();
-   } elsif ($choice == 6 && $player[4] >= 10) {
-       print "Your HP has been restored...\n"; <STDIN>;
-       $player[0] = $player[1];
-       $player[4] -= 10;
-       enemai();
-   } elsif ($choice == 7 && $player[4] >= 2) {
-       print "$lines";
-       print "$enemy[15] Stats\n";
-       print "HP: $enemy[0]/$enemy[1] MP: $enemy[2]/$enemy[3] AP: $enemy[4]/$enemy[5]\n";
-       print "------Physical-----+-----Mental-----\n";
-       print "ATT DEF ACC EVA SPD| ATT DEF ACC EVA\n";
-       print "$enemy[6]  $enemy[7]  $enemy[8]  $enemy[9]  $enemy[14] | $enemy[10]  $enemy[11]  $enemy[12]  $enemy[13]\n";
-       print "\nPress Enter...\n"; <STDIN>;
-       $player[4] -= 2;
-       enemai();
-   } elsif ($choice == 8 && $player[4] >= 20) {
-       $player[16] += 1;
-       print "Regeneration increased to $player[16]...\n"; <STDIN>;
-       $player[4] -= 20;
-       enemai();
-   } elsif ($choice == 9) {
-   } else {print "\aNot enough ap...\n"; <STDIN>;}
+   ability();
 } elsif ($choice == 4) {  #Magic
-    print "$lines \b---CHOOSE----($player[2]/$player[3]mp)\n1) Magic Missile (4mp)\n2) Sub Zer0      (7mp)\n3) Smite        (10mp)\n4) Demi         (25mp)\n5) Restore HP   (20mp)\n6) Restore AP   (20mp)\n9) Back\n";
-    $choice = <STDIN>; $choice += "\b";
-   if ($choice == 1 && $player[2] >= 4) {
-        $damage = plmag(50);
-        print "Magic Missile does $damage damage to $enemy[15]...\n"; <STDIN>;
-        $enemy[0] -= $damage;
-        $player[2] -= 4;
-        enemai();
-   } elsif ($choice == 2 && $player[2] >= 7) {
-       $damage = plmag(80);
-       print "Sub Zer0 does $damage damage to $enemy[15]...\n"; <STDIN>;
-       $enemy[0] -= $damage;
-       $player[2] -= 7;
-       enemai();
-   } elsif ($choice == 3 && $player[2] >= 10) {
-       $damage = plmag(120);
-       print "Smite does $damage to $enemy[15]...\n"; <STDIN>;
-       $enemy[0] -= $damage;
-       $player[2] -= 10;
-       enemai();
-   } elsif ($choice == 4 && $player[2] >= 25) {
-       $damage = $enemy[0] / 4;
-       $damage = int $damage;
-       print "Demi does $damage to $enemy[15]...\n"; <STDIN>;
-       $enemy[0] -= $damage;
-       $player[2] -= 25;
-       enemai();
-   } elsif ($choice == 5 && $player[2] >= 20) {
-       print "Your health has been restored...\n"; <STDIN>;
-       $player[0] = $player[1];
-       $player[2] -= 20;
-       enemai();
-   } elsif ($choice == 6 && $player[2] >= 20) {
-       print "Your AP has been restored...\n"; <STDIN>;
-       $player[4] = $player[5];
-       $player[2] -= 20;
-       enemai();
-   } elsif ($choice == 9) {
-   } else {print "\aNot enough MP...\n"; <STDIN>;}
+   magic();
 } elsif ($choice == 5) {  #Run
    $odds = ( $player[14] * 50 * rand ) - ( $enemy[14] * 100 * rand ); #this needs to be fixed...
    if ($odds > 0) {print "You run away safely...\n"; <STDIN>; $endbattle = 1;}
@@ -227,28 +118,10 @@ if ($choice == 1) {       #fight
     print "\aYou don't run away...\n"; <STDIN>;
     enemai();
     }
-
-
 } elsif ($choice == 6) {  #Charge
-    print "$lines \b---CHOOSE---\n1) Phys Attack up\n2) Phys Defense up\n3) Speed up\n4) AP up\n5) MP up\n9) Back\n";
-    $choice = <STDIN>; $choice += "\b";
-    if ($choice == 1) {$player[6] += 1; print "Attack Increased...\n"; <STDIN>; enemai();}
-    elsif ($choice == 2) {$player[7] += 1; print "Defense Increased...\n"; <STDIN>; enemai();}
-    elsif ($choice == 3) {$player[14] += 1; print "Speed Increased...\n"; <STDIN>; enemai();}
-    elsif ($choice == 4) {$player[4] += 3; print "AP Increased...\n"; <STDIN>; enemai();}
-    elsif ($choice == 5) {$player[2] += 4; print "MP Increased...\n"; <STDIN>; enemai();}
-    elsif ($choice == 9) {}
-    else {print "\aInvalid selection...\n";<STDIN>;}
+   charge();
 } elsif ($choice == 7) {  #View self stats
-   print "$lines";
-   print "$player[15] Stats\n";
-   print "HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
-   print "------Physical-----+-----Mental-----\n";
-   print "ATT DEF ACC EVA SPD| ATT DEF ACC EVA\n";
-   print "$player[6]  $player[7]  $player[8]  $player[9]  $player[14] | $player[10]  $player[11]  $player[12]  $player[13]\n";
-   print "\nPress Enter...\n"; <STDIN>;
-} elsif ($choice == 9) {  #Exit Game
-   user_quit();
+   view_self_stats();
 } elsif ($choice == 97) {  #Debug
    print "DEBUG: display variables\n";
    print "Player stats: @player[0 .. 16]\n";
@@ -276,14 +149,15 @@ if ($choice == 1) {       #fight
    $player[4] = $player[5];
    $cheat = 1;
 }
-if ($player[0] <= 0 or $enemy[0] <= 0) {
-}; #end main while
+if ($player[0] <= 0 or $enemy[0] <= 0) { }
 }
 }
+
 sub chk_pl_dth {
 if ($player[0] < 1) { return(0); } #dead
 if ($player[0] > 0) { return(1); } #alive
 }
+
 sub finish {
 if ($player[0] <= 0 && $enemy[0] <= 0) { print "You both killed each other.\n"; exit; }
 elsif ($player[0] <= 0) { print "You were killed.\n"; exit;}
@@ -348,6 +222,7 @@ sub hpcheck { #makes sure that you don't go over your max, and keeps it an integ
    $enemy[4] = int $enemy[4];
 }
 sub enemai { #enemy decision
+   if ($mode == 0) {
    my($a) = rand(100);
    if ($a < 9) {
       print "$enemy[15] uses a potion...\n"; <STDIN>;
@@ -394,6 +269,7 @@ sub enemai { #enemy decision
       print "$enemy[15] uses magic Restores AP...\n"; <STDIN>;
    } else {
       enatk();
+   }
    }
 regen(); #regenerate after enemy attack
 }
@@ -460,6 +336,158 @@ sub user_quit {
  print "$lines";
  print "You have decided to end the game.\n";
  exit
+}
+
+sub fight {
+   if ($player[14] >= $enemy[14]) { platk(); enemai(); }    #player faster
+   elsif ($player[14] <= $enemy[14]) { enemai(); platk(); } #enemy faster
+}
+
+sub item {
+   $asdf = 0; #this variable is used to make sure that the enemy attacks only if an item is used
+   print "$lines";
+   print "HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
+   print "Use an Item:\n";
+   print "1) Potions   ($inven[0])\n";
+   print "2) HiPotions ($inven[1])\n";
+   print "3) Grenades  ($inven[2])\n";
+   print "4) Ability   ($inven[3])\n";
+   print "5) Magic     ($inven[4])\n";
+   print "9) Quit\n";
+   $choice = <STDIN>; $choice += "\b"; $choice = int $choice; #get user choice, chop off \n
+   if ($choice == 9) {$asdf = 1;}
+   $choice -= 1;                       #array starts with 0
+
+   if ($inven[$choice] >= 1) {
+      $inven[$choice] -= 1;
+      useitem($choice);
+      hpcheck();
+   } else {
+      if ($asdf == 0) { print "Not enough of those items...\n"; <STDIN>; }
+      $asdf = 1;
+   }
+   if ($asdf == 0){ enemai(); }
+}
+
+sub ability {
+    print "$lines \b---CHOOSE---($player[4]/$player[5]ap)\n1) Super Punch  (4ap)\n2) Upper Cut    (5ap)\n3) +10% Attack (16ap)\n4) +10% Defense(16ap)\n5) +10% Speed  (16ap)\n6) Restore HP  (10ap)\n7) Scan Enemy   (2ap)\n8) Regen ($player[16])   (20ap)\n9) Back\n";
+    $choice = <STDIN>; $choice += "\b";
+   if ($choice == 1 && $player[4] >= 4) {
+        $damage = dam_mod(100,8);
+        print "Super Punch does $damage damage to $enemy[15]...\n"; <STDIN>;
+        $enemy[0] -= $damage;
+        $player[4] -= 4;
+        enemai();
+   } elsif ($choice == 2 && $player[4] >= 5) {
+       $damage = dam_mod(120,10);
+       print "Upper Cut does $damage damage to $enemy[15]...\n"; <STDIN>;
+       $enemy[0] -= $damage;
+       $player[4] -= 5;
+       enemai();
+   } elsif ($choice == 3 && $player[4] >= 16) {
+       print "Your attack has been increased...\n"; <STDIN>;
+       $player[6] *= 1.1;
+       $player[6] = int $player[6];
+       $player[4] -= 16;
+       enemai();
+   } elsif ($choice == 4 && $player[4] >= 16) {
+       print "Your defense has been increased...\n"; <STDIN>;
+       $player[7] *= 1.1;
+       $player[7] = int $player[7];
+       $player[4] -= 16;
+       enemai();
+   } elsif ($choice == 5 && $player[4] >= 16) {
+       print "Your speed has been increased...\n"; <STDIN>;
+       $player[14] *= 1.1;
+       $player[14] = int $player[14];
+       $player[4] -= 16;
+       enemai();
+   } elsif ($choice == 6 && $player[4] >= 10) {
+       print "Your HP has been restored...\n"; <STDIN>;
+       $player[0] = $player[1];
+       $player[4] -= 10;
+       enemai();
+   } elsif ($choice == 7 && $player[4] >= 2) {
+       print "$lines";
+       print "$enemy[15] Stats\n";
+       print "HP: $enemy[0]/$enemy[1] MP: $enemy[2]/$enemy[3] AP: $enemy[4]/$enemy[5]\n";
+       print "------Physical-----+-----Mental-----\n";
+       print "ATT DEF ACC EVA SPD| ATT DEF ACC EVA\n";
+       print "$enemy[6]  $enemy[7]  $enemy[8]  $enemy[9]  $enemy[14] | $enemy[10]  $enemy[11]  $enemy[12]  $enemy[13]\n";
+       print "\nPress Enter...\n"; <STDIN>;
+       $player[4] -= 2;
+       enemai();
+   } elsif ($choice == 8 && $player[4] >= 20) {
+       $player[16] += 1;
+       print "Regeneration increased to $player[16]...\n"; <STDIN>;
+       $player[4] -= 20;
+       enemai();
+   } elsif ($choice == 9) {
+   } else {print "\aNot enough ap...\n"; <STDIN>;}
+}
+
+sub magic {
+    print "$lines \b---CHOOSE----($player[2]/$player[3]mp)\n1) Magic Missile (4mp)\n2) Sub Zer0      (7mp)\n3) Smite        (10mp)\n4) Demi         (25mp)\n5) Restore HP   (20mp)\n6) Restore AP   (20mp)\n9) Back\n";
+    $choice = <STDIN>; $choice += "\b";
+   if ($choice == 1 && $player[2] >= 4) {
+        $damage = plmag(50);
+        print "Magic Missile does $damage damage to $enemy[15]...\n"; <STDIN>;
+        $enemy[0] -= $damage;
+        $player[2] -= 4;
+        enemai();
+   } elsif ($choice == 2 && $player[2] >= 7) {
+       $damage = plmag(80);
+       print "Sub Zer0 does $damage damage to $enemy[15]...\n"; <STDIN>;
+       $enemy[0] -= $damage;
+       $player[2] -= 7;
+       enemai();
+   } elsif ($choice == 3 && $player[2] >= 10) {
+       $damage = plmag(120);
+       print "Smite does $damage to $enemy[15]...\n"; <STDIN>;
+       $enemy[0] -= $damage;
+       $player[2] -= 10;
+       enemai();
+   } elsif ($choice == 4 && $player[2] >= 25) {
+       $damage = $enemy[0] / 4;
+       $damage = int $damage;
+       print "Demi does $damage to $enemy[15]...\n"; <STDIN>;
+       $enemy[0] -= $damage;
+       $player[2] -= 25;
+       enemai();
+   } elsif ($choice == 5 && $player[2] >= 20) {
+       print "Your health has been restored...\n"; <STDIN>;
+       $player[0] = $player[1];
+       $player[2] -= 20;
+       enemai();
+   } elsif ($choice == 6 && $player[2] >= 20) {
+       print "Your AP has been restored...\n"; <STDIN>;
+       $player[4] = $player[5];
+       $player[2] -= 20;
+       enemai();
+   } elsif ($choice == 9) {
+   } else {print "\aNot enough MP...\n"; <STDIN>;}
+}
+
+sub charge {
+    print "$lines \b---CHOOSE---\n1) Phys Attack up\n2) Phys Defense up\n3) Speed up\n4) AP up\n5) MP up\n9) Back\n";
+    $choice = <STDIN>; $choice += "\b";
+    if ($choice == 1) {$player[6] += 1; print "Attack Increased...\n"; <STDIN>; enemai();}
+    elsif ($choice == 2) {$player[7] += 1; print "Defense Increased...\n"; <STDIN>; enemai();}
+    elsif ($choice == 3) {$player[14] += 1; print "Speed Increased...\n"; <STDIN>; enemai();}
+    elsif ($choice == 4) {$player[4] += 3; print "AP Increased...\n"; <STDIN>; enemai();}
+    elsif ($choice == 5) {$player[2] += 4; print "MP Increased...\n"; <STDIN>; enemai();}
+    elsif ($choice == 9) {}
+    else {print "\aInvalid selection...\n";<STDIN>;}
+}
+
+sub view_self_stats {
+   print "$lines";
+   print "$player[15] Stats\n";
+   print "HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
+   print "------Physical-----+-----Mental-----\n";
+   print "ATT DEF ACC EVA SPD| ATT DEF ACC EVA\n";
+   print "$player[6]  $player[7]  $player[8]  $player[9]  $player[14] | $player[10]  $player[11]  $player[12]  $player[13]\n";
+   print "\nPress Enter...\n"; <STDIN>;
 }
 
 #released under the GPL by nucleocide.net
