@@ -1,5 +1,8 @@
 #!/usr/bin/perl
 #Cobalt Calibur and Position
+$lines = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"; #how else do you clear the screen?
+print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com \nVersion 1.2.5\n\nPress Enter...\n";
+<STDIN>;
 init(); #should include load option here
 map_move();
 
@@ -9,27 +12,37 @@ $y = 0; #vertical
 $m = 0; #spaces moved
 $play = 1; #continue playing
 $mode = 0; #enemy retaliation
-#            0    1     2   3   4   5   6   7   8   9  10  11  12  13  14    15    16
-#          hp-   hp+   mp- mp+ ap- ap+ at  df  ac  ev  at  df  ac  ev  sp    name regen
-@player = (1000, 1000, 40, 50, 20, 25, 50, 50, 70, 10, 50, 50, 90, 10, 20, "Thomas", 0);
 $money = 200;
-$lines = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"; #how else do you clear the screen?
 $itpot = 100; $ithpt = 200; $itgr1 = 200; $itgr2 = 20; $itabi = 10; $itmag = 15; #item values
 @inven = (4, 3, 3, 2, 2); #inventory
-print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com\nVersion 1.2.2\n\nPress Enter...\n";
-<STDIN>;
+#                                     0    1     2   3   4   5   6   7   8   9  10  11  12  13  14    15    16
+#                                   hp-   hp+   mp- mp+ ap- ap+ at  df  ac  ev  at  df  ac  ev  sp    name regen
+while ($play == 1) {
+print "$lines";
+print "Pick a character type to be:\n";
+print "1) Normal\n2) Warrior\n3) Cleric\n4) Mage \n5) Healer\n6) Monk\n";
+  $choice = <STDIN>;
+  if    ($choice == 1) { @player = (1000, 1000, 50, 50, 25, 25, 50, 50, 70, 10, 50, 50, 90, 10, 20, "Thomas", 0); $play = 0; }        #normal
+  elsif ($choice == 2) { @player = (1200, 1200, 0, 0, 25, 25, 70, 70, 95, 10, 0, 0, 0, 5, 20, "Hunter", 0); $play = 0; }                #warrior
+  elsif ($choice == 3) { @player = (1300, 1300, 70, 70, 25, 25, 30, 80, 75, 10, 65, 75, 95, 15, 20, "Goryla", 1); $play = 0; }        #cleric
+  elsif ($choice == 4) { @player = (900, 900, 100, 100, 30, 30, 20, 60, 55, 10, 75, 80, 95, 20, 20, "Cobalt", 0); $play = 0; }        #mage
+  elsif ($choice == 5) { @player = (1500, 1500, 100, 100, 30, 30, 20, 60, 55, 10, 40, 95, 95, 20, 20, "Corbra", 2); $play = 0; }        #healer
+  elsif ($choice == 6) { @player = (1500, 1500, 30, 30, 80, 80, 50, 50, 50, 10, 50, 50, 50, 10, 20, "Necroa", 0); $play = 0; }        #monk
+  else { $play = 1}
+}
+$play = 1;
 }
 
 sub map_move {
  while ($play == 1) {
   @enemy = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "Nobody", 0);
-  print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+  print "$lines";
   print "$player[15] HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
   print "Funds: $money\n";
   print "--Location--\n";
   print "X:$x Y:$y M: $m\n";
   print "--Choices---\n";
-  print "01) - 09 Move\n10) Item\n11) Ability\n12) Magic\n13) View Stats\n14) Exit Game\n";
+  print "01) - 09 Move\n10) Item \n11) Ability \n12) Magic\n13) View Stats\n14) Exit Game\n";
   print "?:";
   $choice = <STDIN>;
   if    ($choice == 1 and $y > -10 and $x > -10) { $y -= 1; $x -= 1; }
@@ -47,6 +60,10 @@ sub map_move {
   elsif ($choice == 12) { $mode = 1; magic(); $mode = 0; }
   elsif ($choice == 13) { $mode = 1; view_self_stats(); $mode = 0; }
   elsif ($choice == 14) { $mode = 1; user_quit(); $play = 0; }
+  elsif ($choice == 96) { debug1(); }
+  elsif ($choice == 97) { debug2(); }
+  elsif ($choice == 98) { debug3(); }
+  elsif ($choice == 99) { debug4(); }
   else { }
   $m++;
   regen();
@@ -64,6 +81,9 @@ sub check_local {
   } elsif ($x == 0 and $y == 0) {
    print "You are at your house and you rest..."; <STDIN>;
    $player[0] += 200; $player[2] += 2; $player[4] += 1; hpcheck();
+  } elsif ($x == -6 and $y == -2) {
+   print "You are at the training center..."; <STDIN>;
+   traincent();
   } elsif ($x == -2 and $y == 3) {
    print "You are at the temple..."; <STDIN>;
   } elsif ($x == -10 or $x == 10 or $y == -10 or $y == 10) {
@@ -109,7 +129,7 @@ hpcheck();
 print "$lines";
 print "$player[15] HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
 print "$enemy[15] HP: $enemy[0]\n";
-print "---CHOOSE---\n1) Attack\n2) Item\n3) Ability\n4) Magic\n5) Run\n6) Charge\n7) View Stats\n";
+print "---CHOOSE---\n1) Attack\n2) Item \n3) Ability \n4) Magic\n5) Run\n6) Charge\n7) View Stats\n";
 $choice = <STDIN>; $choice += "\b";
 if ($choice == 1) {       #fight
    fight();
@@ -123,7 +143,7 @@ if ($choice == 1) {       #fight
    $odds = ( $player[14] * 50 * rand ) - ( $enemy[14] * 100 * rand ); #this needs to be fixed...
    if ($odds > 0) {print "You run away safely...\n"; <STDIN>; $endbattle = 1; return(29);}
    else {
-    print "\aYou don't run away...\n"; <STDIN>;
+    print "\aYou don\'t run away...\n"; <STDIN>;
     enemai();
     }
 } elsif ($choice == 6) {  #Charge
@@ -484,7 +504,7 @@ sub shop {
    print "$lines";
    print "Welcome to the shop\nYou have $money cash.\n";
    print "---BUY------#--cc---SELL---\n";
-   print "1) Potion  ($inven[0])(10c) (06) (5c)\n2) HiPotion($inven[1])(30c) (07) (15c)\n3) Grenade ($inven[2])(75c) (08) (40c)\n4) Magic   ($inven[3])(50c) (09) (25c)\n5) Agility ($inven[4])(50c) (10) (25c)\n99) Leave\n";
+   print "1) Potion  ($inven[0])(10c) (06) (5c)\n2) HiPotion($inven[1])(30c) (07) (15c)\n3) Grenade ($inven[2])(75c) (08) (40c)\n4) Magic   ($inven[3])(50c) (09) (25c)\n5) Ability ($inven[4])(50c) (10) (25c)\n99) Leave\n";
    $choice = <STDIN>;
    if ($choice == 1 and $money >= 10) {
    $inven[0] += 1;
@@ -527,6 +547,26 @@ sub shop {
    $money += 50;
    print "You now have $inven[4] Abilities...\n"; <STDIN>;
    }
+}
+#                                     0    1     2   3   4   5   6   7   8   9  10  11  12  13  14    15    16
+#                                   hp-   hp+   mp- mp+ ap- ap+ at  df  ac  ev  at  df  ac  ev  sp    name regen
+
+sub traincent {
+   print "$lines";
+   print "Welcome to the training center.\n";
+   print "While here, I can make you stronger\n";
+   print "For the small fee of \$500...\n";
+   print "[type 1 for yes, 2 for no]\n";
+   $choice = <STDIN>;
+   if ($choice == 1 and $money >= 500) {
+    $money -= 500;
+    $player[6] += 4;
+    $player[7] += 4;
+    $player[8] += 5;
+    $player[9] += 3;
+   } elsif ($choice == 1 and $money < 500) {
+    print "Go away, you cheep bastard...\n"; <STDIN>;
+   } else { }
 }
 
 sub mrand { #min, max
@@ -605,5 +645,6 @@ sub debug4 {
    print "\ninven[3]:"; $inven[3] = <STDIN>;
    print "\ninven[4]:"; $inven[4] = <STDIN>;
 }
+
 
 #released under the GPL by nucleocide.net
