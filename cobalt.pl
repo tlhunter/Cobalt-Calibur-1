@@ -2,7 +2,7 @@
 #Cobalt Calibur and Map Engine
 #August 28, 2004
 clear();
-print "Cobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com \nVersion 2.0.0\n\nPress Enter...\n";
+print "Cobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com \nVersion 2.0.1\n\nPress Enter...\n";
 <STDIN>;
 initiate_player();
 initiate_map();
@@ -166,7 +166,9 @@ if ($map[$player{'x'}][$player{'y'}] == 3 ) { print "DROWNING!\a\n"; $player{'hp
   print "Funds: $money\n";
   print_map();
   print "--Choices---\n";
-  print "01) - 09 Move\n05) Action \n10) Item \n11) Ability \n12) Magic\n13) View Stats\n14) Exit Game\n";
+  print "789      |5)Action    10)Item\n";
+  print "4 6 Move |13)View Stats 14) Exit\n";
+  print "123      |11)Ability  12)Magic\n";
   print "?:";
  $action = <STDIN>;
  clear();
