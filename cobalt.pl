@@ -1,9 +1,75 @@
 #!/usr/bin/perl
-#Cobalt Calibur
+#Cobalt Calibur and Position
+init(); #should include load option here
+map_move();
+
+sub init {
+$x = 0; #horizontal
+$y = 0; #vertical
+$m = 0; #spaces moved
+$play = 1; #continue playing
 #            0    1     2   3   4   5   6   7   8   9  10  11  12  13  14    15    16
 #          hp-   hp+   mp- mp+ ap- ap+ at  df  ac  ev  at  df  ac  ev  sp    name regen
-@player = (1000, 1000, 20, 50, 10, 20, 50, 50, 70, 10, 50, 50, 90, 10, 20, "Thomas", 0);
-# @enemy =  (2000, 2000, 50, 50, 10, 10, 55, 55, 90, 12, 50, 20, 90, 20, 20, "Enemy");
+@player = (1000, 1000, 40, 50, 20, 25, 50, 50, 70, 10, 50, 50, 90, 10, 20, "Thomas", 0);
+$lines = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+$itpot = 100; $ithpt = 200; $itgr1 = 200; $itgr2 = 20; $itabi = 10; $itmag = 15; #item values
+@inven = (4, 3, 3, 2, 2);                                    #sample inventory
+print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com\nVersion 1.0.0\n\nPress Enter...\n";
+<STDIN>;
+}
+
+sub map_move {
+ while ($play == 1) {
+  print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+  print "$player[15] HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
+  print "--Location--\n";
+  print "X:$x Y:$y M: $m\n";
+  print "--Choices---\n";
+  print "01) - 09 Move\n";
+  print "10) exit\n"; #items, magic, and abilities
+  print "DIR:";
+  $dir = <STDIN>;
+  if    ($dir == 1 and $y > -10 and $x > -10) { $y -= 1; $x -= 1; }
+  elsif ($dir == 0) { }
+  elsif ($dir == 2 and $y > -10) { $y -= 1; }
+  elsif ($dir == 3 and $y > -10 and $x < 10) { $y -= 1; $x += 1; }
+  elsif ($dir == 4 and $x > -10) { $x -= 1; }
+  elsif ($dir == 5) { }
+  elsif ($dir == 6 and $x < 10) { $x += 1; }
+  elsif ($dir == 7 and $x > -10 and $y < 10 ) { $x -= 1; $y += 1; }
+  elsif ($dir == 8 and $y < 10 ) { $y += 1; }
+  elsif ($dir == 9 and $x < 10 and  $y < 10 ) { $x += 1; $y += 1; }
+  elsif ($dir == 10) { user_quit(); $play = 0; }
+  else { }
+  $m++;
+  regen();
+  hpcheck();
+  check_local();
+  check_enemy(rand(100));
+ }
+user_quit();
+}
+
+sub check_local {
+  if ($x == 4 and $y == 2) {
+   print "You are at the town..."; <STDIN>;
+  } elsif ($x == 0 and $y == 0) {
+   print "You are at your house and you rest..."; <STDIN>;
+   $player[0] = $player[1]; $player[2] = $player[3]; $player[4] = $player[5];
+  } elsif ($x == -2 and $y == 3) {
+   print "You are at the temple..."; <STDIN>;
+  } elsif ($x == -10 or $x == 10 or $y == -10 or $y == 10) {
+   print "You are drowning in the water..."; <STDIN>;
+   $player[0] -= dam_mod(100,10);
+   if (! chk_pl_dth()) { print "$lines \bYou drowned.\n"; exit; }
+  }
+}
+
+sub check_enemy {
+  if (@_[0] > 90) { print "$lines \bAmbushed!\n"; <STDIN>; pre_combat(); } #10% chance
+}
+
+sub pre_combat {
 $enemy[1] = (int rand(400) + 1600);
 $enemy[0] = $enemy[1];
 $enemy[3] = (int rand(20) + 30);
@@ -19,15 +85,13 @@ $enemy[11] = (int rand(20) + 40);
 $enemy[12] = (int rand(20) + 70);
 $enemy[13] = (int rand(10) + 5);
 $enemy[14] = (int rand(4) + 18);
-@inven = (2, 2, 2, 2, 2);                                    #sample inventory
 @names = ("Jekeyl", "FeiSar", "Zidaxe", "Goteki", "Icarus"); #sample names
 $enemy[15] = @names[ rand @names ];                          #name grabber
-$lines = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-$itpot = 100; $ithpt = 200; $itgr1 = 200; $itgr2 = 20; $itabi = 10; $itmag = 15; #item values
-print "$lines \bCobalt Calibur\nCreated by Thomas Hunter\nnucleocide@!\byahoo.com\nVersion 0.5.5\n\nPress Enter...\n";
-<STDIN>;
+combat();
+}
 
-while ( $player[0] > 0 && $enemy[0] > 0 ) {
+sub combat {
+while ( $endbattle != 1 ) {
 hpcheck();
 print "$lines";
 print "$player[15] HP: $player[0]/$player[1] MP: $player[2]/$player[3] AP: $player[4]/$player[5]\n";
@@ -158,7 +222,7 @@ if ($choice == 1) {       #fight
    } else {print "\aNot enough MP...\n"; <STDIN>;}
 } elsif ($choice == 5) {  #Run
    $odds = ( $player[14] * 50 * rand ) - ( $enemy[14] * 100 * rand ); #this needs to be fixed...
-   if ($odds > 0) {print "You run away safely...\n"; <STDIN>; exit;}
+   if ($odds > 0) {print "You run away safely...\n"; <STDIN>; $endbattle = 1;}
    else {
     print "\aYou don't run away...\n"; <STDIN>;
     enemai();
@@ -184,16 +248,15 @@ if ($choice == 1) {       #fight
    print "$player[6]  $player[7]  $player[8]  $player[9]  $player[14] | $player[10]  $player[11]  $player[12]  $player[13]\n";
    print "\nPress Enter...\n"; <STDIN>;
 } elsif ($choice == 9) {  #Exit Game
-   print "You have decided to end the game.\n";
-   exit;
+   user_quit();
 } elsif ($choice == 97) {  #Debug
    print "DEBUG: display variables\n";
    print "Player stats: @player[0 .. 16]\n";
    print "Enemy stats : @enemy[0 .. 15]\n";
-   print "Variable Scopes: a: $a b: $b c: $c asdf: $asdf damage: $damage regen: $regen orig: $orig type: $type\n";
+   print "Variable Scopes: a: $a b: $b c: $c asdf: $asdf damage: $damage regen: $regen orig: $orig type: $type cheat: $cheat\n";
    print "Potions   ($inven[0])$itpot\nHiPotions ($inven[1])$ithpt\nGrenades  ($inven[2])$itgr1 $itgr2\nAbility   ($inven[3])$itabi\nMagic     ($inven[4])$itmag\n";
    print "press enter..."; <STDIN>;
-
+   $cheat = 1;
 } elsif ($choice == 98) {  #Debug
    print "DEBUG: increase all enemy min/max points\n"; <STDIN>;
    $enemy[1] += 200;
@@ -202,6 +265,7 @@ if ($choice == 1) {       #fight
    $enemy[2] = $enemy[3];
    $enemy[5] += 15;
    $enemy[4] = $enemy[5];
+   $cheat = 1;
 } elsif ($choice == 99) {  #Debug
    print "DEBUG: increase all self min/max points\n"; <STDIN>;
    $player[1] += 200;
@@ -210,13 +274,24 @@ if ($choice == 1) {       #fight
    $player[2] = $player[3];
    $player[5] += 15;
    $player[4] = $player[5];
+   $cheat = 1;
 }
+if ($player[0] <= 0 or $enemy[0] <= 0) {
 }; #end main while
-
-if ($player[0] <= 0 && $enemy[0] <= 0) { print "You both killed each other.\n"; }
-elsif ($player[0] <= 0) { print "You were killed.\n"; }
+}
+}
+sub chk_pl_dth {
+if ($player[0] < 1) { return(0); } #dead
+if ($player[0] > 0) { return(1); } #alive
+}
+sub finish {
+if ($player[0] <= 0 && $enemy[0] <= 0) { print "You both killed each other.\n"; exit; }
+elsif ($player[0] <= 0) { print "You were killed.\n"; exit;}
 elsif ($enemy[0] <= 0) { print "You were victorious.\n";}
 else {print "Error computing winner.\n";}
+if ($cheat == 1) {print "You have used at least one DEBUG code.\n"; }
+$endbattle = 1;
+}
 
 sub platk { #Calculate enemy damage from player
    if ($player[0] > 0 && hit_ch(0,2)){ #make sure your alive
@@ -239,7 +314,13 @@ sub plmag { #Calculate enemy damage from player magic
    return($damage);
    }
 }
-# I will need one for enemy magic eventually...
+sub enmag { #Calculate player damage from enemy magic
+   if ($enemy[0] > 0 && hit_ch(1,3)){
+   my($damage) = @_[0];
+   $damage += (2 * $enemy[10] - $player[11]); #THIS NEEDS TO CHANGE
+   return($damage);
+   }
+}
 sub dam_mod {
    my($d1) = @_[0]; #eg 50
    my($ch) = @_[1]; #eg 10%
@@ -268,23 +349,49 @@ sub hpcheck { #makes sure that you don't go over your max, and keeps it an integ
 }
 sub enemai { #enemy decision
    my($a) = rand(100);
-   if ($a < 10) {
+   if ($a < 9) {
       print "$enemy[15] uses a potion...\n"; <STDIN>;
       $enemy[0] += $itpot;
       hpcheck();
-   } elsif ($a < 20) {
-      print "$enemy[15] charges his attack...\n"; <STDIN>;
-      $enemy[6] += 1;
-   } elsif ($a < 30) {
-      print "$enemy[15] charges his defense...\n"; <STDIN>;
-      $enemy[6] += 1;
-   } elsif ($a < 40) {
-      print "$enemy[15] charges his speed...\n"; <STDIN>;
-      $enemy[14] += 1;
-   } elsif ($a < 45) {
+   } elsif ($a < 16) {
       my($damage) = dam_mod($itgr1,$itgr2);
       $player[0] -= $damage;
       print "$enemy[15] uses a grenade ($damage)...\n"; <STDIN>;
+   } elsif ($a < 24) {
+      $enemy[2] += $itmag;
+      print "$enemy[15] uses item magic...\n"; <STDIN>;
+   } elsif ($a < 32) {
+      $enemy[4] += $itabi;
+      print "$enemy[15] uses item ability...\n"; <STDIN>;
+   } elsif ($a < 38) {
+      print "$enemy[15] charges his attack...\n"; <STDIN>;
+      $enemy[6] += 1;
+   } elsif ($a < 44) {
+      print "$enemy[15] charges his defense...\n"; <STDIN>;
+      $enemy[6] += 1;
+   } elsif ($a < 50) {
+      print "$enemy[15] charges his speed...\n"; <STDIN>;
+      $enemy[14] += 1;
+   } elsif ($a < 55 and $enemy[2] >= 9) {
+      my($damage) = enmag(100);
+      $player[0] -= $damage;
+      $enemy[2] -= 9;
+      print "$enemy[15] uses magic Degrade ($damage)...\n"; <STDIN>;
+   } elsif ($a < 60 and $enemy[2] >= 12) {
+      my($damage) = enmag(140);
+      $player[0] -= $damage;
+      $enemy[2] -= 12;
+      print "$enemy[15] uses magic Decay ($damage)...\n"; <STDIN>;
+   } elsif ($a < 65 and $enemy[2] >= 25) {
+      my($damage) = $player[0] / 4;
+      my($damage) = int $damage;
+      $player[0] -= $damage;
+      $enemy[2] -= 25;
+      print "$enemy[15] uses magic Demi ($damage)...\n"; <STDIN>;
+   } elsif ($a < 70 and $enemy[2] >= 20) {
+      $enemy[4] = $enemy[5];
+      $enemy[2] -= 20;
+      print "$enemy[15] uses magic Restores AP...\n"; <STDIN>;
    } else {
       enatk();
    }
@@ -336,8 +443,10 @@ sub hit_ch { #hit chance
    my($chance) = (100-(100-$a)*($b/$a+1)/2); #Just for kicks... should be changed
    if (rand(100) < $chance){return(1);}
    else {
-      if ($orig == 2) {print "$player[15] misses $enemy[15]...\n";}
-      elsif ($orig == 3) {print "$enemy[15] misses $player[15]...\n";}
+      if ($orig == 2 and $type == 0) {print "$player[15] misses $enemy[15] with physical...\n";}
+      elsif ($orig == 2 and $type == 1) {print "$player[15] misses $enemy[15] with magical...\n";}
+      elsif ($orig == 3 and $type == 0) {print "$enemy[15] misses $player[15] with physical...\n";}
+      elsif ($orig == 3 and $type == 1) {print "$enemy[15] misses $player[15] with magical...\n";}
    <STDIN>; return(0);}
 }
 sub regen { #regenerate
@@ -345,6 +454,12 @@ sub regen { #regenerate
    $player[0] += $regen;           #hp 100%
    $player[2] += int ($regen / 2); #mp 50%
    $player[4] += int ($regen / 3); #ap 33%
+}
+
+sub user_quit {
+ print "$lines";
+ print "You have decided to end the game.\n";
+ exit
 }
 
 #released under the GPL by nucleocide.net
